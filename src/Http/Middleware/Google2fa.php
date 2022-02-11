@@ -49,13 +49,17 @@ class Google2fa
                 ->setBlocks(config('google2fa.recovery_codes.blocks'))
                 ->setChars(config('google2fa.recovery_codes.chars_in_block'))
                 ->toArray();
+            $recoveryHashes = $data['recovery'];
+            array_walk($recoveryHashes, function (&$value) {
+                $value = password_hash($value, config('google2fa.recovery_codes.hashing_algorithm'));
+            });
 
             User2fa::where('user_id', auth()->user()->id)->delete();
 
             $user2fa = new User2fa();
             $user2fa->user_id = auth()->user()->id;
             $user2fa->google2fa_secret = $secretKey;
-            $user2fa->recovery = json_encode($data['recovery']);
+            $user2fa->recovery = json_encode($recoveryHashes);
             $user2fa->save();
 
             return response(view('nova-google2fa::recovery', $data));
